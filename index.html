@@ -127,6 +127,13 @@ input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border
 .saved{display:grid;gap:10px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
 .card .row b{flex:1 1 auto}
+.btn.playing{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.song{display:grid;gap:12px;scroll-margin-top:140px}
+.song-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.song-head h3{font-family:var(--display);font-weight:400;font-size:1.6rem;color:var(--accent)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.sec-head h4{margin:0;font-size:1rem}
+.rep{font-family:var(--mono);font-size:.8rem;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 8px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){.ev{transition:none}}
 @media (max-width:520px){.bar input[type=range]{width:110px}.bar .stop{margin-left:0}}
@@ -142,11 +149,12 @@ input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border
 <div class="bar"><div class="wrap">
   <label for="tempo">Tempo <input id="tempo" type="range" min="50" max="160" value="90"> <span class="bpm" id="bpmOut">90</span> pulsos/min</label>
   <label for="metro"><input id="metro" type="checkbox" checked> Metrónomo</label>
-  <label for="loop"><input id="loop" type="checkbox"> Repetir</label>
+  <label for="loop" id="loopLbl"><input id="loop" type="checkbox"> Repetir ejercicios</label>
   <button class="btn ghost stop" id="stopBtn" type="button">■ Detener</button>
   <div class="tabs" role="tablist" aria-label="Vistas">
     <button type="button" role="tab" id="tab-manual" aria-selected="true" data-view="manual">Manual</button>
     <button type="button" role="tab" id="tab-creador" aria-selected="false" data-view="creador">Crear mis ritmos</button>
+    <button type="button" role="tab" id="tab-canciones" aria-selected="false" data-view="canciones">Canciones</button>
   </div>
   <nav class="toc" id="toc" aria-label="Secciones">
     <a href="#ritmos">Ritmos</a><a href="#golpes">Golpes</a><a href="#leccion-1">Lección 1</a><a href="#leccion-2">Lección 2</a><a href="#leccion-3">Lección 3</a><a href="#rutina">Rutina</a>
@@ -178,6 +186,7 @@ input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border
     <p class="status" id="bStatus"></p>
     <div class="row">
       <button type="button" class="btn" id="bPlay">▶ Tocar mi ritmo</button>
+      <label for="bLoop"><input id="bLoop" type="checkbox"> Repetir este ritmo</label>
       <button type="button" class="btn ghost" id="bUndo">Deshacer</button>
       <button type="button" class="btn ghost" id="bClear">Borrar todo</button>
       <button type="button" class="btn ghost" id="bSave">Guardar</button>
@@ -194,6 +203,17 @@ input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border
     <input id="importCode" type="text" placeholder="Pega aquí un código de ritmo">
     <button type="button" class="btn ghost" id="bImport">Cargar código</button>
   </div>
+</div></section>
+</main>
+
+<main id="view-canciones" hidden>
+<section><div class="wrap">
+  <span class="eyebrow">Repertorio</span>
+  <h2>Canciones para acompañar</h2>
+  <p class="lead">Partituras de castañuelas para acompañar canciones tradicionales. Pon la canción (o cántala) y toca encima. Cada sección indica cuántas veces se repite; «Tocar canción completa» las encadena en orden con su tempo sugerido.</p>
+  <nav class="toc" id="songToc" aria-label="Canciones"></nav>
+  <div id="songs" style="display:grid;gap:28px"></div>
+  <p class="note">Son acompañamientos rítmicos de castañuelas, no la melodía. Las versiones grabadas cambian de velocidad: ajusta el tempo con la barra de arriba hasta que coincida con la que uses.</p>
 </div></section>
 </main>
 
@@ -309,10 +329,14 @@ function tick(t,strong){
   g.gain.setValueAtTime(strong?0.22:0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
   o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+0.06);
 }
-function stopAll(){ timers.forEach(clearTimeout); timers=[]; document.querySelectorAll('.ev.on').forEach(e=>e.classList.remove('on')); playing=null; }
+let activeBtn=null, pendingBtn=null;
+function resetBtn(){ if(activeBtn){ activeBtn.innerHTML=activeBtn.dataset.html; activeBtn.classList.remove('playing'); activeBtn=null; } }
+function stopAll(){ timers.forEach(clearTimeout); timers=[]; document.querySelectorAll('.ev.on').forEach(e=>e.classList.remove('on')); playing=null; resetBtn(); }
 /* events: [{s,d}] ; els: matching DOM nodes (optional) ; beats per measure */
 function play(events,beatsPer,els,opts={}){
+  const btn=opts.btn||pendingBtn; pendingBtn=null;
   stopAll(); const c=audio(); const id=Symbol(); playing=id;
+  if(btn){ btn.dataset.html=btn.dataset.html||btn.innerHTML; btn.innerHTML='■ Detener'; btn.classList.add('playing'); activeBtn=btn; }
   const bpm=+tempo.value, beat=60/bpm, metro=document.getElementById('metro').checked;
   const total=events.reduce((a,e)=>a+e.d,0);
   const countIn=opts.countIn??beatsPer;
@@ -331,7 +355,9 @@ function play(events,beatsPer,els,opts={}){
   for(let b=0;b<countIn;b++) tick(start+b*beat,b===0);
   let next=start+countIn*beat;
   const loopIt=()=>{ if(playing!==id) return; const end=pass(next); next=end;
-    if(document.getElementById('loop').checked && opts.loopable!==false) timers.push(setTimeout(loopIt,(end-c.currentTime-0.25)*1000)); };
+    const loopOn = opts.loopFn ? opts.loopFn() : document.getElementById('loop').checked;
+    if(loopOn && opts.loopable!==false) timers.push(setTimeout(loopIt,(end-c.currentTime-0.25)*1000));
+    else timers.push(setTimeout(()=>{ if(playing===id){ playing=null; resetBtn(); } },(end-c.currentTime)*1000+100)); };
   loopIt();
 }
 
@@ -393,7 +419,9 @@ const setBpm=v=>{tempo.value=v;bpmOut.textContent=tempo.value;};
 tempo.addEventListener('input',()=>bpmOut.textContent=tempo.value);
 document.getElementById('stopBtn').addEventListener('click',stopAll);
 
-function mkBtn(label,fn){const b=document.createElement('button');b.type='button';b.className='btn';b.innerHTML=playIco+label;b.addEventListener('click',fn);return b;}
+function toggleable(b,fn){ b.dataset.html=b.innerHTML;
+  b.addEventListener('click',()=>{ if(activeBtn===b){ stopAll(); return; } pendingBtn=b; fn(); pendingBtn=null; }); return b; }
+function mkBtn(label,fn){const b=document.createElement('button');b.type='button';b.className='btn';b.innerHTML=playIco+label;return toggleable(b,fn);}
 
 const figs=document.getElementById('figs');
 FIGS.forEach(f=>{const el=document.createElement('div');el.className='fig';
@@ -450,15 +478,16 @@ LESSONS.forEach(L=>{
 });
 
 /* ---------- pestañas ---------- */
-const views={manual:document.getElementById('view-manual'),creador:document.getElementById('view-creador')};
+const views={manual:document.getElementById('view-manual'),creador:document.getElementById('view-creador'),canciones:document.getElementById('view-canciones')};
 function show(v){ if(!views[v]) v='manual';
   Object.entries(views).forEach(([k,el])=>el.hidden=k!==v);
   document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  document.getElementById('toc').hidden=v!=='manual'; stopAll(); }
+  document.getElementById('toc').hidden=v!=='manual'; document.getElementById('loopLbl').hidden=v!=='manual'; stopAll(); }
 document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>{
-  if(b.dataset.view==='creador'){ location.hash='creador'; } else { history.replaceState(null,'',location.pathname+location.search); show('manual'); window.scrollTo(0,0);} }));
-window.addEventListener('hashchange',()=>show(location.hash==='#creador'?'creador':'manual'));
-show(location.hash==='#creador'?'creador':'manual');
+  if(b.dataset.view!=='manual'){ location.hash=b.dataset.view; window.scrollTo(0,0); } else { history.replaceState(null,'',location.pathname+location.search); show('manual'); window.scrollTo(0,0);} }));
+const viewFromHash=()=>{const h=location.hash.slice(1); if(views[h]) return h; if(h.startsWith('cancion-')) return 'canciones'; return 'manual';};
+window.addEventListener('hashchange',()=>show(viewFromHash()));
+show(viewFromHash());
 
 /* ---------- creador de ritmos ---------- */
 const KEY='castanuelas.ritmos';
@@ -515,10 +544,12 @@ function scoreNode(ev,bp,onClick){
 }
 rSig.addEventListener('change',()=>{cur.sig=+rSig.value;drawBuilder();});
 rName.addEventListener('input',()=>{cur.name=rName.value;});
-document.getElementById('bUndo').addEventListener('click',()=>{cur.ev.pop();drawBuilder();});
-document.getElementById('bClear').addEventListener('click',()=>{cur.ev=[];drawBuilder();});
-document.getElementById('bPlay').addEventListener('click',()=>{ if(!cur.ev.length) return;
-  const els=[...bScore.querySelectorAll('.ev')]; play(cur.ev,cur.sig,els); });
+document.getElementById('bUndo').addEventListener('click',()=>{stopAll();cur.ev.pop();drawBuilder();});
+document.getElementById('bClear').addEventListener('click',()=>{stopAll();cur.ev=[];drawBuilder();});
+toggleable(document.getElementById('bPlay'),()=>{ if(!cur.ev.length) return;
+  const els=[...bScore.querySelectorAll('.ev')]; play(cur.ev,cur.sig,els,{loopFn:()=>bLoop.checked}); });
+const bLoop=document.getElementById('bLoop');
+bLoop.addEventListener('change',()=>{cur.loop=bLoop.checked;});
 
 function loadAll(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return [];}}
 function saveAll(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true;}catch(e){return false;}}
@@ -526,15 +557,15 @@ let savedList=loadAll(), memOnly=false;
 document.getElementById('bSave').addEventListener('click',()=>{
   if(!cur.ev.length){bStatus.textContent='Agrega al menos un golpe antes de guardar.';return;}
   const name=(rName.value.trim()||`Ritmo ${savedList.length+1}`);
-  const item={id:Date.now(),name,sig:cur.sig,ev:cur.ev.map(e=>({s:e.s,d:e.d}))};
+  const item={id:Date.now(),name,sig:cur.sig,loop:!!bLoop.checked,ev:cur.ev.map(e=>({s:e.s,d:e.d}))};
   const i=savedList.findIndex(r=>r.name===name); if(i>=0) savedList[i]={...item,id:savedList[i].id}; else savedList.unshift(item);
   memOnly=!saveAll(savedList); drawSaved();
   bStatus.textContent=memOnly?`Guardado «${name}» solo mientras la página esté abierta (este navegador no permite guardar).`:`Guardado «${name}».`;
 });
-const encode=r=>btoa(unescape(encodeURIComponent(JSON.stringify({n:r.name,c:r.sig,e:r.ev.map(e=>[e.s||'',e.d])}))));
+const encode=r=>btoa(unescape(encodeURIComponent(JSON.stringify({n:r.name,c:r.sig,l:r.loop?1:0,e:r.ev.map(e=>[e.s||'',e.d])}))));
 function decode(code){const o=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
   const ev=o.e.map(([s,d])=>({s:s||null,d:+d})).filter(e=>(e.s===null||SOUND[e.s])&&[4,2,1,0.5,0.25].includes(e.d));
-  if(!ev.length) throw new Error('vacío'); return {id:Date.now(),name:String(o.n||'Ritmo importado').slice(0,60),sig:[2,3,4].includes(+o.c)?+o.c:4,ev};}
+  if(!ev.length) throw new Error('vacío'); return {id:Date.now(),name:String(o.n||'Ritmo importado').slice(0,60),sig:[2,3,4].includes(+o.c)?+o.c:4,loop:!!o.l,ev};}
 function drawSaved(){
   const box=document.getElementById('saved'); box.innerHTML='';
   if(!savedList.length){box.innerHTML='<p class="empty">Aún no tienes ritmos guardados. Crea uno arriba y pulsa «Guardar».</p>';return;}
@@ -545,9 +576,13 @@ function drawSaved(){
     const chip=document.createElement('span');chip.className='chip';chip.textContent=`${r.sig}/4 · ${r.ev.length} golpes`;head.appendChild(chip);
     const sc=document.createElement('div');sc.className='score';const {node,els}=scoreNode(r.ev,r.sig);sc.appendChild(node);
     const acts=document.createElement('div');acts.className='row';
-    acts.appendChild(mkBtn('Tocar',()=>play(r.ev,r.sig,els)));
+    acts.appendChild(mkBtn('Tocar',()=>play(r.ev,r.sig,els,{loopFn:()=>!!r.loop})));
+    const lp=document.createElement('label');const lid='loop-'+r.id;lp.htmlFor=lid;
+    lp.innerHTML=`<input id="${lid}" type="checkbox"${r.loop?' checked':''}> Repetir`;
+    lp.querySelector('input').addEventListener('change',ev=>{r.loop=ev.target.checked;saveAll(savedList);});
+    acts.appendChild(lp);
     const mk=(txt,fn)=>{const b=document.createElement('button');b.type='button';b.className='btn ghost';b.textContent=txt;b.addEventListener('click',fn);acts.appendChild(b);return b;};
-    mk('Editar',()=>{cur={name:r.name,sig:r.sig,ev:r.ev.map(e=>({...e}))};rName.value=r.name;rSig.value=r.sig;drawBuilder();window.scrollTo({top:0,behavior:'smooth'});});
+    mk('Editar',()=>{stopAll();cur={name:r.name,sig:r.sig,loop:!!r.loop,ev:r.ev.map(e=>({...e}))};rName.value=r.name;rSig.value=r.sig;bLoop.checked=!!r.loop;drawBuilder();window.scrollTo({top:0,behavior:'smooth'});});
     const cp=mk('Copiar código',async()=>{const code=encode(r);
       try{await navigator.clipboard.writeText(code);cp.textContent='Copiado';}catch(e){const inp=document.getElementById('importCode');inp.value=code;inp.select();cp.textContent='Código abajo, cópialo';}
       setTimeout(()=>cp.textContent='Copiar código',2000);});
@@ -564,5 +599,71 @@ if(!savedList.length){ // ejemplo para empezar
   savedList=[{id:1,name:'Ejemplo · Sevillana básica',sig:3,ev:[{s:'Ria',d:1},{s:'Pi',d:1},{s:'Ta',d:1},{s:'Ria',d:1},{s:'Pi',d:1},{s:'Ta',d:1},{s:'Pi',d:.5},{s:'Pi',d:.5},{s:'Ta',d:1},{s:'Pam',d:1},{s:'Chin',d:1},{s:null,d:2}]}];
 }
 drawBuilder(); drawSaved();
+
+/* ---------- canciones ---------- */
+const X=(arr,times)=>Array.from({length:times},()=>arr).flat(); // repetir compases
+const SONGS=[
+ {id:'mananitas',t:'Las Mañanitas',o:'Canción tradicional mexicana de cumpleaños',sig:3,bpm:90,
+  d:'Aire de vals lento: golpe fuerte en el 1 y dos golpes suaves. La carretilla adorna los finales de frase.',
+  sec:[
+   {n:'Entrada',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',2),r(1)]},
+   {n:'Estrofa (vals)',rep:4,ev:[n('Pam',1),n('Pi',1),n('Pi',1),n('Ta',1),n('Pi',1),n('Pi',1)]},
+   {n:'Fin de frase',rep:2,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pam',1)]},
+   {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Chin',1),r(1)]},
+  ]},
+ {id:'cielito',t:'Cielito Lindo',o:'Canción mexicana de 1882, dominio público',sig:3,bpm:132,
+  d:'Vals ranchero ágil. En el estribillo marca los «ay, ay, ay, ay» con Pam y cierra con carretilla.',
+  sec:[
+   {n:'Estrofa (vals ranchero)',rep:4,ev:[n('Ta',1),n('Pi',1),n('Pi',1),n('Ta',1),n('Pi',1),n('Pi',1)]},
+   {n:'Estribillo',rep:2,ev:[n('Pam',1),n('Pi',1),n('Pi',1),n('Pam',1),n('Pi',1),n('Pi',1),n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',2),r(1)]},
+   {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Chin',1),r(1)]},
+  ]},
+ {id:'bamba',t:'La Bamba',o:'Son jarocho tradicional de Veracruz',sig:4,bpm:120,
+  d:'Rasgueo constante en corcheas. Mantén la base y usa la variación cuando la canción repite el estribillo.',
+  sec:[
+   {n:'Base',rep:4,ev:[n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pi',.5),n('Pi',.5)]},
+   {n:'Variación',rep:2,ev:[n('Pi',.5),n('Ta',.5),n('Pi',.5),n('Ta',.5),n('Pam',1),r(1)]},
+   {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Pam',1),n('Chin',1),r(2)]},
+  ]},
+ {id:'sevillanas',t:'Sevillanas',o:'Baile tradicional andaluz',sig:3,bpm:140,
+  d:'El repertorio clásico de castañuelas. La salida y la copla usan la frase «ria-pi-ta» de la Lección 3.',
+  sec:[
+   {n:'Salida',rep:1,ev:[...X([n('Ria',1),n('Pi',1),n('Ta',1)],3),n('Pi',1),n('Ta',1),n('Pam',1)]},
+   {n:'Copla',rep:3,ev:[...X([n('Ria',1),n('Pi',1),n('Ta',1)],3),n('Pi',1),n('Ta',1),n('Pam',1)]},
+   {n:'Remate',rep:1,ev:[n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pam',1),n('Pam',1),r(2)]},
+  ]},
+ {id:'jota',t:'Jota',o:'Baile tradicional aragonés',sig:3,bpm:160,
+  d:'Rápida y enérgica. Alterna la carretilla con golpes dobles; el Pam va siempre en el tercer tiempo de la frase.',
+  sec:[
+   {n:'Paseo',rep:4,ev:[n('Ria',1),n('Pi',1),n('Ta',1)]},
+   {n:'Copla',rep:4,ev:[n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pam',1),n('Ria',1),n('Pi',1),n('Ta',1)]},
+   {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Chin',1),r(1)]},
+  ]},
+];
+const songsBox=document.getElementById('songs'), songToc=document.getElementById('songToc');
+SONGS.forEach(S=>{
+  const a=document.createElement('a');a.href='#cancion-'+S.id;a.textContent=S.t;songToc.appendChild(a);
+  const box=document.createElement('article');box.className='song';box.id='cancion-'+S.id;
+  const head=document.createElement('div');head.className='song-head';
+  head.innerHTML=`<h3>${S.t}</h3><span class="chip">${S.sig}/4</span><span class="chip">≈ <strong>${S.bpm}</strong> pulsos/min</span>`;
+  const p=document.createElement('p');p.className='lead';p.innerHTML=`<em>${S.o}.</em> ${S.d}`;
+  const ctrls=document.createElement('div');ctrls.className='row';
+  const useT=document.createElement('button');useT.type='button';useT.className='chip';useT.textContent=`Usar ${S.bpm} pulsos/min`;useT.addEventListener('click',()=>setBpm(S.bpm));
+  const slow=document.createElement('button');slow.type='button';slow.className='chip';slow.textContent='Practicar lento (70)';slow.addEventListener('click',()=>setBpm(70));
+  const lid='loop-song-'+S.id, lp=document.createElement('label');lp.htmlFor=lid;lp.innerHTML=`<input id="${lid}" type="checkbox"> Repetir`;
+  const allFlat=[], allEls=[], secBlocks=[];
+  S.sec.forEach(sec=>{
+    const blk=document.createElement('div');blk.className='ex';
+    const sh=document.createElement('div');sh.className='sec-head';
+    sh.innerHTML=`<h4>${sec.n}</h4><span class="rep">×${sec.rep}</span>`;
+    const sc=document.createElement('div');sc.className='score';const {node,els}=scoreNode(sec.ev,S.sig);sc.appendChild(node);
+    sh.appendChild(mkBtn('Tocar sección',()=>play(sec.ev,S.sig,els,{loopFn:()=>lp.querySelector('input').checked})));
+    blk.append(sh,sc);secBlocks.push(blk);
+    for(let k=0;k<sec.rep;k++){ allFlat.push(...sec.ev); allEls.push(...els); }
+  });
+  ctrls.append(mkBtn('Tocar canción completa',()=>play(allFlat,S.sig,allEls,{loopFn:()=>lp.querySelector('input').checked})),useT,slow,lp);
+  box.append(head,p,ctrls,...secBlocks);songsBox.appendChild(box);
+});
+if(location.hash.startsWith('#cancion-')){const el=document.querySelector(location.hash);if(el)el.scrollIntoView();}
 </script>
 </body></html>
