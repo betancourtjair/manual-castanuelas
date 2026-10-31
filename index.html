@@ -213,7 +213,7 @@ input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border
   <p class="lead">Partituras de castañuelas para acompañar canciones tradicionales. Pon la canción (o cántala) y toca encima. Cada sección indica cuántas veces se repite; «Tocar canción completa» las encadena en orden con su tempo sugerido.</p>
   <nav class="toc" id="songToc" aria-label="Canciones"></nav>
   <div id="songs" style="display:grid;gap:28px"></div>
-  <p class="note">Son acompañamientos rítmicos de castañuelas, no la melodía. Las versiones grabadas cambian de velocidad: ajusta el tempo con la barra de arriba hasta que coincida con la que uses.</p>
+  <p class="note">La pista de acompañamiento toca los acordes de la canción (bajo y rasgueo) para que tengas una guía armónica mientras tocas; no incluye la melodía cantada. Puedes apagarla en cada canción. Las versiones grabadas cambian de velocidad y de tono: ajusta el tempo con la barra de arriba hasta que coincida con la que uses.</p>
 </div></section>
 </main>
 
@@ -300,7 +300,8 @@ function figOf(ev){ if(!ev.s) return REST_BY_DUR[ev.d]; if(ev.s==='Ria') return 
 const FIG_LABEL={'redonda':'redonda','blanca':'blanca','negra':'negra','corchea':'corchea','semicorchea':'semic.','carretilla':'carretilla','sil-redonda':'silencio','sil-negra':'silencio','sil-blanca':'silencio','sil-corchea':'silencio','sil-semicorchea':'silencio'};
 
 /* ---------- sonido ---------- */
-let ctx=null, noise=null, timers=[], playing=null;
+let ctx=null, noise=null, timers=[], playing=null, bus=null;
+const out=()=>bus||ctx.destination;
 function audio(){
   if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)();
     const len=ctx.sampleRate*0.3; noise=ctx.createBuffer(1,len,ctx.sampleRate);
@@ -312,10 +313,10 @@ function click(t,freq,gain,decay=0.045){
   const c=ctx, src=c.createBufferSource(); src.buffer=noise;
   const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=4;
   const g=c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+decay);
-  src.connect(bp).connect(g).connect(c.destination); src.start(t); src.stop(t+decay+0.02);
+  src.connect(bp).connect(g).connect(out()); src.start(t); src.stop(t+decay+0.02);
   const o=c.createOscillator(), og=c.createGain(); o.frequency.value=freq*0.42;
   og.gain.setValueAtTime(gain*0.5,t); og.gain.exponentialRampToValueAtTime(0.0001,t+0.025);
-  o.connect(og).connect(c.destination); o.start(t); o.stop(t+0.04);
+  o.connect(og).connect(out()); o.start(t); o.stop(t+0.04);
 }
 const SOUND={
   Ta:(t)=>click(t,1700,0.9),
@@ -327,15 +328,38 @@ const SOUND={
 function tick(t,strong){
   const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=strong?1320:880;
   g.gain.setValueAtTime(strong?0.22:0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
-  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+0.06);
+  o.connect(g).connect(out()); o.start(t); o.stop(t+0.06);
+}
+/* pista de acordes (guía) */
+const NOTE={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function chordMidis(name){ const m=name.match(/^([A-G])([#b]?)(m?)(7?)$/); if(!m) return null;
+  let root=NOTE[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0);
+  const third=m[3]?3:4, notes=[root,root+third,root+7]; if(m[4]) notes.push(root+10);
+  return {bass:36+((root%12)+12)%12, tri:notes.map(x=>55+(((x-55)%12)+12)%12)}; }
+function pluck(t,midi,dur,gain,type='triangle'){
+  const f=440*Math.pow(2,(midi-69)/12), o=ctx.createOscillator(), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+  o.type=type; o.frequency.value=f; lp.type='lowpass'; lp.frequency.value=2200;
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(lp).connect(g).connect(out()); o.start(t); o.stop(t+dur+0.05);
+}
+function strum(t,ch,dur,gain){ const c=chordMidis(ch); if(!c) return; c.tri.forEach((m,i)=>pluck(t+i*0.012,m,dur,gain,'sawtooth')); }
+function bassNote(t,ch,dur,fifth){ const c=chordMidis(ch); if(!c) return; pluck(t,c.bass+(fifth?7:0),dur,0.38,'triangle'); }
+function backingMeasure(t0,chord,beatsPer,beat){ // chord: "D" o ["C","F"] (mitad y mitad)
+  const half=Array.isArray(chord)?chord:[chord,chord];
+  if(beatsPer===3){ bassNote(t0,half[0],beat*0.9); strum(t0+beat,half[0],beat*0.5,0.05); strum(t0+2*beat,half[1],beat*0.5,0.05); }
+  else { bassNote(t0,half[0],beat*0.9); strum(t0+beat,half[0],beat*0.35,0.05); strum(t0+1.5*beat,half[0],beat*0.3,0.035);
+         bassNote(t0+2*beat,half[1],beat*0.9,true); strum(t0+3*beat,half[1],beat*0.35,0.05); strum(t0+3.5*beat,half[1],beat*0.3,0.035); }
 }
 let activeBtn=null, pendingBtn=null;
 function resetBtn(){ if(activeBtn){ activeBtn.innerHTML=activeBtn.dataset.html; activeBtn.classList.remove('playing'); activeBtn=null; } }
-function stopAll(){ timers.forEach(clearTimeout); timers=[]; document.querySelectorAll('.ev.on').forEach(e=>e.classList.remove('on')); playing=null; resetBtn(); }
+function stopAll(){ timers.forEach(clearTimeout); timers=[];
+  if(bus){ try{ bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setValueAtTime(0,ctx.currentTime); bus.disconnect(); }catch(e){} bus=null; } document.querySelectorAll('.ev.on').forEach(e=>e.classList.remove('on')); playing=null; resetBtn(); }
 /* events: [{s,d}] ; els: matching DOM nodes (optional) ; beats per measure */
 function play(events,beatsPer,els,opts={}){
   const btn=opts.btn||pendingBtn; pendingBtn=null;
   stopAll(); const c=audio(); const id=Symbol(); playing=id;
+  bus=c.createGain(); bus.gain.value=1; bus.connect(c.destination);
+  const bk=opts.backing; let bm=0;
   if(btn){ btn.dataset.html=btn.dataset.html||btn.innerHTML; btn.innerHTML='■ Detener'; btn.classList.add('playing'); activeBtn=btn; }
   const bpm=+tempo.value, beat=60/bpm, metro=document.getElementById('metro').checked;
   const total=events.reduce((a,e)=>a+e.d,0);
@@ -343,6 +367,8 @@ function play(events,beatsPer,els,opts={}){
   const start=c.currentTime+0.15;
   function pass(t0){
     if(metro) for(let b=0;b<total;b++) tick(t0+b*beat,b%beatsPer===0);
+    if(bk && (!bk.on || bk.on())) for(let k=0;k<Math.round(total/beatsPer);k++){ backingMeasure(t0+k*beatsPer*beat,bk.prog[bm%bk.prog.length],beatsPer,beat); bm++; }
+    else if(bk) bm+=Math.round(total/beatsPer);
     let pos=0;
     events.forEach((e,i)=>{ const t=t0+pos*beat;
       if(e.s) SOUND[e.s](t);
@@ -603,7 +629,8 @@ drawBuilder(); drawSaved();
 /* ---------- canciones ---------- */
 const X=(arr,times)=>Array.from({length:times},()=>arr).flat(); // repetir compases
 const SONGS=[
- {id:'mananitas',t:'Las Mañanitas',o:'Canción tradicional mexicana de cumpleaños',sig:3,bpm:90,
+ {id:'mananitas',t:'Las Mañanitas',o:'Canción tradicional mexicana de cumpleaños',sig:3,bpm:90,key:'Re mayor',
+  prog:['A7','D', 'D','D','A7','A7','A7','A7','D','D', 'D7','G','A7','D', 'A7','D'],
   d:'Aire de vals lento: golpe fuerte en el 1 y dos golpes suaves. La carretilla adorna los finales de frase.',
   sec:[
    {n:'Entrada',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',2),r(1)]},
@@ -611,28 +638,32 @@ const SONGS=[
    {n:'Fin de frase',rep:2,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pam',1)]},
    {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Chin',1),r(1)]},
   ]},
- {id:'cielito',t:'Cielito Lindo',o:'Canción mexicana de 1882, dominio público',sig:3,bpm:132,
+ {id:'cielito',t:'Cielito Lindo',o:'Canción mexicana de 1882, dominio público',sig:3,bpm:132,key:'Re mayor',
+  prog:['D','D','A7','A7','A7','A7','D','D', 'A7','A7','D','D','D7','G','A7','D', 'A7','D'],
   d:'Vals ranchero ágil. En el estribillo marca los «ay, ay, ay, ay» con Pam y cierra con carretilla.',
   sec:[
    {n:'Estrofa (vals ranchero)',rep:4,ev:[n('Ta',1),n('Pi',1),n('Pi',1),n('Ta',1),n('Pi',1),n('Pi',1)]},
    {n:'Estribillo',rep:2,ev:[n('Pam',1),n('Pi',1),n('Pi',1),n('Pam',1),n('Pi',1),n('Pi',1),n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',2),r(1)]},
    {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Chin',1),r(1)]},
   ]},
- {id:'bamba',t:'La Bamba',o:'Son jarocho tradicional de Veracruz',sig:4,bpm:120,
+ {id:'bamba',t:'La Bamba',o:'Son jarocho tradicional de Veracruz',sig:4,bpm:120,key:'Do mayor',
+  prog:[['C','F'],['G','F'],['C','F'],['G','G'], ['C','F'],['G','G'], ['C','F'],['G','C']],
   d:'Rasgueo constante en corcheas. Mantén la base y usa la variación cuando la canción repite el estribillo.',
   sec:[
    {n:'Base',rep:4,ev:[n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pi',.5),n('Pi',.5)]},
    {n:'Variación',rep:2,ev:[n('Pi',.5),n('Ta',.5),n('Pi',.5),n('Ta',.5),n('Pam',1),r(1)]},
    {n:'Final',rep:1,ev:[n('Ria',1),n('Pi',1),n('Ta',1),n('Pam',1),n('Pam',1),n('Chin',1),r(2)]},
   ]},
- {id:'sevillanas',t:'Sevillanas',o:'Baile tradicional andaluz',sig:3,bpm:140,
+ {id:'sevillanas',t:'Sevillanas',o:'Baile tradicional andaluz',sig:3,bpm:140,key:'La menor (cadencia andaluza)',
+  prog:['Am','G','F','E', 'Am','G','F','E', 'Am','G','F','E', 'Am','G','F','E', 'F','E'],
   d:'El repertorio clásico de castañuelas. La salida y la copla usan la frase «ria-pi-ta» de la Lección 3.',
   sec:[
    {n:'Salida',rep:1,ev:[...X([n('Ria',1),n('Pi',1),n('Ta',1)],3),n('Pi',1),n('Ta',1),n('Pam',1)]},
    {n:'Copla',rep:3,ev:[...X([n('Ria',1),n('Pi',1),n('Ta',1)],3),n('Pi',1),n('Ta',1),n('Pam',1)]},
    {n:'Remate',rep:1,ev:[n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pam',1),n('Pam',1),r(2)]},
   ]},
- {id:'jota',t:'Jota',o:'Baile tradicional aragonés',sig:3,bpm:160,
+ {id:'jota',t:'Jota',o:'Baile tradicional aragonés',sig:3,bpm:160,key:'La mayor',
+  prog:['A','E7','E7','A', 'A','E7','E7','A','A','E7','E7','A', 'E7','A'],
   d:'Rápida y enérgica. Alterna la carretilla con golpes dobles; el Pam va siempre en el tercer tiempo de la frase.',
   sec:[
    {n:'Paseo',rep:4,ev:[n('Ria',1),n('Pi',1),n('Ta',1)]},
@@ -651,17 +682,24 @@ SONGS.forEach(S=>{
   const useT=document.createElement('button');useT.type='button';useT.className='chip';useT.textContent=`Usar ${S.bpm} pulsos/min`;useT.addEventListener('click',()=>setBpm(S.bpm));
   const slow=document.createElement('button');slow.type='button';slow.className='chip';slow.textContent='Practicar lento (70)';slow.addEventListener('click',()=>setBpm(70));
   const lid='loop-song-'+S.id, lp=document.createElement('label');lp.htmlFor=lid;lp.innerHTML=`<input id="${lid}" type="checkbox"> Repetir`;
-  const allFlat=[], allEls=[], secBlocks=[];
+  const gid='guide-song-'+S.id, gl=document.createElement('label');gl.htmlFor=gid;gl.innerHTML=`<input id="${gid}" type="checkbox" checked> Pista de acompañamiento`;
+  const guideOn=()=>gl.querySelector('input').checked, loopOn=()=>lp.querySelector('input').checked;
+  const chName=c=>Array.isArray(c)?(c[0]===c[1]?c[0]:c[0]+' '+c[1]):c;
+  const allFlat=[], allEls=[], secBlocks=[]; let mStart=0;
   S.sec.forEach(sec=>{
+    const secBeats=sec.ev.reduce((a,e)=>a+e.d,0), secMeasures=Math.round(secBeats/S.sig)*sec.rep;
+    const prog=S.prog.slice(mStart,mStart+secMeasures); mStart+=secMeasures;
     const blk=document.createElement('div');blk.className='ex';
     const sh=document.createElement('div');sh.className='sec-head';
     sh.innerHTML=`<h4>${sec.n}</h4><span class="rep">×${sec.rep}</span>`;
     const sc=document.createElement('div');sc.className='score';const {node,els}=scoreNode(sec.ev,S.sig);sc.appendChild(node);
-    sh.appendChild(mkBtn('Tocar sección',()=>play(sec.ev,S.sig,els,{loopFn:()=>lp.querySelector('input').checked})));
-    blk.append(sh,sc);secBlocks.push(blk);
+    const chords=document.createElement('p');chords.className='counts';chords.textContent='Acordes: '+prog.map(chName).join(' | ');
+    sh.appendChild(mkBtn('Tocar sección',()=>play(sec.ev,S.sig,els,{loopFn:loopOn,backing:{prog,on:guideOn}})));
+    blk.append(sh,sc,chords);secBlocks.push(blk);
     for(let k=0;k<sec.rep;k++){ allFlat.push(...sec.ev); allEls.push(...els); }
   });
-  ctrls.append(mkBtn('Tocar canción completa',()=>play(allFlat,S.sig,allEls,{loopFn:()=>lp.querySelector('input').checked})),useT,slow,lp);
+  head.insertAdjacentHTML('beforeend',`<span class="chip">Tono: <strong>${S.key}</strong></span>`);
+  ctrls.append(mkBtn('Tocar canción completa',()=>play(allFlat,S.sig,allEls,{loopFn:loopOn,backing:{prog:S.prog,on:guideOn}})),useT,slow,lp,gl);
   box.append(head,p,ctrls,...secBlocks);songsBox.appendChild(box);
 });
 if(location.hash.startsWith('#cancion-')){const el=document.querySelector(location.hash);if(el)el.scrollIntoView();}
