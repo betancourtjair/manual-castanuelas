@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Manual de Castañuelas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: una columna de lectura; barra de práctica fija arriba; ejercicios como compases sonoros */
+:root{
+  --bg:#FBF8F9; --surface:#FFFFFF; --fg:#1E1416; --muted:#6E5A60; --line:#E6D8DC;
+  --accent:#8B1E3F; --accent-soft:#F6E7EC; --on-accent:#FFFFFF; --hit:#FFE3A3;
+  --display:"DM Serif Display",Georgia,"Times New Roman",serif;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171012; --surface:#211719; --fg:#F2E8EA; --muted:#B39CA3; --line:#3A2A2E;
+  --accent:#E0607A; --accent-soft:#3A1E26; --on-accent:#1A0E11; --hit:#6B4A12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171012; --surface:#211719; --fg:#F2E8EA; --muted:#B39CA3; --line:#3A2A2E;
+  --accent:#E0607A; --accent-soft:#3A1E26; --on-accent:#1A0E11; --hit:#6B4A12; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);color:var(--accent)}
+h3{font-family:var(--body);font-weight:700;font-size:1.05rem}
+p{margin:0;max-width:65ch}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* header */
+header.hero{padding-block:40px 28px}
+header.hero .wrap{display:grid;gap:12px}
+header.hero p{color:var(--muted)}
+
+/* practice bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:10px}
+.bar label{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted)}
+.bar input[type=range]{width:150px;accent-color:var(--accent)}
+.bpm{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg);min-width:4.5ch}
+.bar .stop{margin-left:auto}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px}
+nav.toc a{font-size:.85rem;color:var(--accent);text-decoration:none;padding:3px 9px;border:1px solid var(--line);border-radius:999px}
+nav.toc a:hover{background:var(--accent-soft)}
+
+button{font:inherit;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:999px;padding:5px 14px;font-weight:600;font-size:.9rem}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn svg{width:12px;height:12px;fill:currentColor}
+
+section{padding-block:36px;border-top:1px solid var(--line)}
+section > .wrap{display:grid;gap:18px}
+.lead{color:var(--muted)}
+
+/* figure cards */
+.figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:52px 1fr;gap:4px 12px;align-items:start}
+.fig .glyph{grid-row:span 3;width:52px;height:64px;color:var(--fg)}
+.fig .name{font-weight:700}
+.fig .dur{font-family:var(--mono);font-size:.8rem;color:var(--accent)}
+.fig p{font-size:.92rem;color:var(--muted);grid-column:2}
+.fig .btn{grid-column:2;justify-self:start;margin-top:6px}
+
+/* strokes table */
+.strokes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stroke{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:4px}
+.stroke b{font-family:var(--display);font-size:1.6rem;font-weight:400;color:var(--accent)}
+.stroke small{color:var(--muted);font-size:.85rem;line-height:1.35}
+.stroke .btn{justify-self:start;margin-top:4px}
+
+ol.steps,ul.tips{margin:0;padding-left:1.3em;display:grid;gap:6px;max-width:65ch}
+.note{background:var(--accent-soft);border-radius:8px;padding:12px 14px;font-size:.95rem;max-width:none}
+
+/* lessons */
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:.82rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);background:var(--surface)}
+.chip strong{color:var(--fg);font-weight:600}
+button.chip{color:var(--accent);border-color:var(--accent)}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}
+.ex-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;justify-content:space-between}
+.ex-head p{font-size:.92rem;color:var(--muted);flex-basis:100%}
+.score{overflow-x:auto}
+.measures{display:flex;gap:0;min-width:min-content}
+.measure{display:flex;border-left:2px solid var(--fg);padding:0 4px}
+.measure:last-child{border-right:2px solid var(--fg)}
+.measure.final:last-child{border-right:5px double var(--fg)}
+.timesig{display:flex;flex-direction:column;justify-content:center;font-family:var(--display);font-size:1.25rem;line-height:.9;padding-right:8px;text-align:center}
+.ev{display:grid;justify-items:center;align-content:start;gap:2px;padding:4px 2px;border-radius:6px;min-width:46px;transition:background .06s}
+.ev svg{width:26px;height:44px;color:var(--fg)}
+.ev .syl{font-weight:700;color:var(--accent);font-size:1rem}
+.ev .fn{font-size:.68rem;color:var(--muted);font-family:var(--mono)}
+.ev.rest .syl{color:var(--muted)}
+.ev.on{background:var(--hit)}
+.counts{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.say{font-style:italic;color:var(--muted);font-size:.95rem}
+
+table.routine{border-collapse:collapse;width:100%;font-size:.95rem}
+table.routine th,table.routine td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.routine th{color:var(--muted);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em}
+table.routine td:first-child{font-family:var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
+footer{padding-block:28px 48px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+.tabs{display:flex;gap:4px;background:var(--accent-soft);padding:3px;border-radius:999px}
+.tabs button{border:0;background:transparent;color:var(--accent);padding:5px 14px;border-radius:999px;font-weight:600;font-size:.9rem}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+.builder{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:16px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.row label{font-size:.9rem;color:var(--muted)}
+input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+#rName,#importCode{flex:1 1 220px}
+.picker{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.pick{display:grid;justify-items:center;gap:0;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:4px 10px 6px;min-width:64px}
+.pick svg{width:22px;height:36px}
+.pick span{font-size:.75rem;color:var(--muted)}
+.pick[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pick.hit b{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent)}
+.builder-score{min-height:96px;border:1px dashed var(--line);border-radius:8px;padding:8px}
+.builder-score .ev{cursor:pointer}
+.builder-score .ev:hover{outline:1px solid var(--accent)}
+.measure.over{background:color-mix(in srgb,var(--hit) 45%,transparent)}
+.empty{color:var(--muted);font-size:.92rem;padding:20px 8px}
+.status{font-size:.88rem;color:var(--muted)}
+.saved{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
+.card .row b{flex:1 1 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){.ev{transition:none}}
+@media (max-width:520px){.bar input[type=range]{width:110px}.bar .stop{margin-left:0}}
+</style>
+</head><body>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow">Lecciones 1, 2 y 3 · Nivel principiante</span>
+  <h1>Manual de Castañuelas</h1>
+  <p>Aprende las figuras rítmicas, escucha cada golpe y practica los ejercicios con sonido. Toca cualquier botón ▶ para oír el patrón; el metrónomo marca el pulso.</p>
+</div></header>
+
+<div class="bar"><div class="wrap">
+  <label for="tempo">Tempo <input id="tempo" type="range" min="50" max="160" value="90"> <span class="bpm" id="bpmOut">90</span> pulsos/min</label>
+  <label for="metro"><input id="metro" type="checkbox" checked> Metrónomo</label>
+  <label for="loop"><input id="loop" type="checkbox"> Repetir</label>
+  <button class="btn ghost stop" id="stopBtn" type="button">■ Detener</button>
+  <div class="tabs" role="tablist" aria-label="Vistas">
+    <button type="button" role="tab" id="tab-manual" aria-selected="true" data-view="manual">Manual</button>
+    <button type="button" role="tab" id="tab-creador" aria-selected="false" data-view="creador">Crear mis ritmos</button>
+  </div>
+  <nav class="toc" id="toc" aria-label="Secciones">
+    <a href="#ritmos">Ritmos</a><a href="#golpes">Golpes</a><a href="#leccion-1">Lección 1</a><a href="#leccion-2">Lección 2</a><a href="#leccion-3">Lección 3</a><a href="#rutina">Rutina</a>
+  </nav>
+</div></div>
+
+<main id="view-creador" hidden>
+<section><div class="wrap">
+  <span class="eyebrow">Estudio personal</span>
+  <h2>Crea tus ritmos</h2>
+  <p class="lead">Elige una figura, luego toca un golpe para agregarlo al final. Toca un golpe en la partitura para quitarlo. Guarda tus ritmos para practicarlos después; se quedan guardados en este navegador.</p>
+
+  <div class="builder">
+    <div class="row">
+      <label for="rName">Nombre</label>
+      <input id="rName" type="text" placeholder="Ej. Sevillana práctica 1" maxlength="60">
+      <label for="rSig">Compás</label>
+      <select id="rSig"><option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option></select>
+    </div>
+    <div>
+      <span class="eyebrow">1 · Figura</span>
+      <div class="picker" id="figPicker" role="radiogroup" aria-label="Figura"></div>
+    </div>
+    <div>
+      <span class="eyebrow">2 · Golpe (se agrega al final)</span>
+      <div class="picker" id="hitPicker"></div>
+    </div>
+    <div class="score builder-score"><div id="bScore"></div></div>
+    <p class="status" id="bStatus"></p>
+    <div class="row">
+      <button type="button" class="btn" id="bPlay">▶ Tocar mi ritmo</button>
+      <button type="button" class="btn ghost" id="bUndo">Deshacer</button>
+      <button type="button" class="btn ghost" id="bClear">Borrar todo</button>
+      <button type="button" class="btn ghost" id="bSave">Guardar</button>
+    </div>
+  </div>
+
+  <h3>Mis ritmos guardados</h3>
+  <div id="saved" class="saved"></div>
+
+  <h3>Compartir</h3>
+  <p class="lead">Copia el código de un ritmo guardado y pásaselo a otra persona. Para cargar uno, pega su código aquí.</p>
+  <div class="row">
+    <label for="importCode" class="sr">Código de ritmo</label>
+    <input id="importCode" type="text" placeholder="Pega aquí un código de ritmo">
+    <button type="button" class="btn ghost" id="bImport">Cargar código</button>
+  </div>
+</div></section>
+</main>
+
+<main id="view-manual">
+<section id="ritmos"><div class="wrap">
+  <span class="eyebrow">Antes de tocar</span>
+  <h2>Las figuras rítmicas</h2>
+  <p class="lead">Cada figura dice cuánto dura un golpe. El <strong>pulso</strong> (lo que marca el metrónomo) vale una negra. Al pulsar ▶ oyes un compás de 4 tiempos tocado con esa figura.</p>
+  <div class="figs" id="figs"></div>
+  <h3>Compás</h3>
+  <div class="figs" id="sigs"></div>
+</div></section>
+
+<section id="golpes"><div class="wrap">
+  <span class="eyebrow">Vocabulario</span>
+  <h2>Los golpes y su sonido</h2>
+  <p class="lead">La castañuela izquierda (<strong>macho</strong>) suena grave y marca el pulso. La derecha (<strong>hembra</strong>) suena aguda y hace los adornos. Los sonidos de esta página son simulados para que distingas cada golpe por su altura.</p>
+  <div class="strokes" id="strokes"></div>
+  <h3>Colocación</h3>
+  <ol class="steps">
+    <li>Pasa el cordón por el pulgar, a la altura de la primera falange (entre la uña y el nudillo).</li>
+    <li>Las dos mitades quedan colgando hacia la palma, con la parte abierta hacia abajo.</li>
+    <li>Ajusta el cordón firme pero sin apretar: las mitades deben quedar un poco abiertas.</li>
+    <li>Manos a la altura del pecho, codos relajados y muñecas sueltas.</li>
+  </ol>
+  <p class="note"><strong>Regla de oro:</strong> el golpe nace de los dedos. El brazo y el hombro se quedan quietos.</p>
+</div></section>
+
+<div id="lessons"></div>
+
+<section id="rutina"><div class="wrap">
+  <span class="eyebrow">Práctica diaria</span>
+  <h2>Rutina sugerida de 15 minutos</h2>
+  <div class="score"><table class="routine">
+    <thead><tr><th>Minutos</th><th>Actividad</th></tr></thead>
+    <tbody>
+      <tr><td>0–2</td><td>Colocación y calentamiento de dedos (abrir y cerrar manos, tamborilear).</td></tr>
+      <tr><td>2–5</td><td>Lección 1 a 70 pulsos/min con metrónomo; luego con el audio.</td></tr>
+      <tr><td>5–9</td><td>Lección 2 lenta; sube el tempo poco a poco hasta el del audio.</td></tr>
+      <tr><td>9–13</td><td>Carretilla sola y Lección 3 con el audio.</td></tr>
+      <tr><td>13–15</td><td>Audio completo de principio a fin, sin detenerte.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Errores comunes</h3>
+  <ul class="tips">
+    <li>Mover el brazo o la muñeca en lugar de los dedos.</li>
+    <li>Cordón muy apretado (no suena) o muy flojo (la castañuela se gira).</li>
+    <li>Acelerar sin darse cuenta: deja el metrónomo encendido hasta que el patrón salga solo.</li>
+    <li>Tocar las corcheas desiguales: las dos mitades del pulso deben durar lo mismo.</li>
+  </ul>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p>Acompaña al audio «Castañuelas - Lecciones 1-3.mp3». Los tiempos de inicio y el tempo de cada lección se midieron en esa grabación; los ejercicios siguen un método estándar de principiante. Si tu audio indica otro patrón, sigue al audio.</p>
+</div></footer>
+
+<script>
+/* ---------- notación (SVG) ---------- */
+const NS='http://www.w3.org/2000/svg';
+function glyph(kind){
+  const head=(filled)=>`<ellipse cx="10" cy="36" rx="6.4" ry="4.4" transform="rotate(-22 10 36)" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="${filled?0:1.8}"/>`;
+  const stem=`<line x1="15.6" y1="34.5" x2="15.6" y2="6" stroke="currentColor" stroke-width="1.6"/>`;
+  const flag=(y)=>`<path d="M15.6 ${y} C 17 ${y+6}, 24 ${y+8}, 21 ${y+16} C 22 ${y+10}, 18 ${y+8}, 15.6 ${y+7} Z" fill="currentColor"/>`;
+  let b='';
+  switch(kind){
+    case 'redonda': b=`<ellipse cx="13" cy="32" rx="7.5" ry="4.8" fill="none" stroke="currentColor" stroke-width="2.6"/>`;break;
+    case 'blanca': b=head(false)+stem;break;
+    case 'negra': b=head(true)+stem;break;
+    case 'corchea': b=head(true)+stem+flag(6);break;
+    case 'semicorchea': b=head(true)+stem+flag(6)+flag(13);break;
+    case 'carretilla': b=head(true)+stem+[14,19,24].map(y=>`<line x1="11" y1="${y+3}" x2="20" y2="${y-1}" stroke="currentColor" stroke-width="2"/>`).join('');break;
+    case 'sil-negra': b=`<path d="M10 6 L16 13 L11 20 L16 26 C 11 25, 9 29, 14 33 C 7 30, 8 23, 13 25 L 8 19 L 13 13 Z" fill="currentColor"/>`;break;
+    case 'sil-blanca': b=`<line x1="3" y1="26" x2="23" y2="26" stroke="currentColor" stroke-width="1"/><rect x="7" y="21" width="12" height="5" fill="currentColor"/>`;break;
+    case 'sil-redonda': b=`<line x1="3" y1="20" x2="23" y2="20" stroke="currentColor" stroke-width="1"/><rect x="7" y="20" width="12" height="5" fill="currentColor"/>`;break;
+    case 'sil-semicorchea': b=`<circle cx="11" cy="11" r="2.8" fill="currentColor"/><circle cx="9" cy="19" r="2.8" fill="currentColor"/><path d="M11 13 C 14 14, 17 12, 19 9 L 12 34 M9 21 C 12 22, 15 20, 17 17" stroke="currentColor" stroke-width="1.7" fill="none"/>`;break;
+    case 'sil-corchea': b=`<circle cx="10" cy="14" r="3" fill="currentColor"/><path d="M10 16 C 13 17, 16 15, 18 12 L 12 34" stroke="currentColor" stroke-width="1.8" fill="none"/>`;break;
+  }
+  return `<svg viewBox="0 0 26 44" aria-hidden="true">${b}</svg>`;
+}
+const FIG_BY_DUR={4:'redonda',2:'blanca',1:'negra',0.5:'corchea',0.25:'semicorchea'};
+const REST_BY_DUR={4:'sil-redonda',2:'sil-blanca',1:'sil-negra',0.5:'sil-corchea',0.25:'sil-semicorchea'};
+function figOf(ev){ if(!ev.s) return REST_BY_DUR[ev.d]; if(ev.s==='Ria') return 'carretilla'; return FIG_BY_DUR[ev.d]; }
+const FIG_LABEL={'redonda':'redonda','blanca':'blanca','negra':'negra','corchea':'corchea','semicorchea':'semic.','carretilla':'carretilla','sil-redonda':'silencio','sil-negra':'silencio','sil-blanca':'silencio','sil-corchea':'silencio','sil-semicorchea':'silencio'};
+
+/* ---------- sonido ---------- */
+let ctx=null, noise=null, timers=[], playing=null;
+function audio(){
+  if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const len=ctx.sampleRate*0.3; noise=ctx.createBuffer(1,len,ctx.sampleRate);
+    const d=noise.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; }
+  if(ctx.state==='suspended') ctx.resume();
+  return ctx;
+}
+function click(t,freq,gain,decay=0.045){
+  const c=ctx, src=c.createBufferSource(); src.buffer=noise;
+  const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=4;
+  const g=c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+decay);
+  src.connect(bp).connect(g).connect(c.destination); src.start(t); src.stop(t+decay+0.02);
+  const o=c.createOscillator(), og=c.createGain(); o.frequency.value=freq*0.42;
+  og.gain.setValueAtTime(gain*0.5,t); og.gain.exponentialRampToValueAtTime(0.0001,t+0.025);
+  o.connect(og).connect(c.destination); o.start(t); o.stop(t+0.04);
+}
+const SOUND={
+  Ta:(t)=>click(t,1700,0.9),
+  Pi:(t)=>click(t,2900,0.8),
+  Pam:(t)=>{click(t,1700,1.0);click(t,2900,0.9)},
+  Ria:(t)=>{const sp=0.042;[0,1,2,3].forEach(i=>click(t-(3-i)*sp,2900-i*120,0.35+i*0.15,0.035))},
+  Chin:(t)=>{click(t,4300,0.9,0.03);click(t+0.012,3600,0.6,0.05)},
+};
+function tick(t,strong){
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=strong?1320:880;
+  g.gain.setValueAtTime(strong?0.22:0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+0.06);
+}
+function stopAll(){ timers.forEach(clearTimeout); timers=[]; document.querySelectorAll('.ev.on').forEach(e=>e.classList.remove('on')); playing=null; }
+/* events: [{s,d}] ; els: matching DOM nodes (optional) ; beats per measure */
+function play(events,beatsPer,els,opts={}){
+  stopAll(); const c=audio(); const id=Symbol(); playing=id;
+  const bpm=+tempo.value, beat=60/bpm, metro=document.getElementById('metro').checked;
+  const total=events.reduce((a,e)=>a+e.d,0);
+  const countIn=opts.countIn??beatsPer;
+  const start=c.currentTime+0.15;
+  function pass(t0){
+    if(metro) for(let b=0;b<total;b++) tick(t0+b*beat,b%beatsPer===0);
+    let pos=0;
+    events.forEach((e,i)=>{ const t=t0+pos*beat;
+      if(e.s) SOUND[e.s](t);
+      if(els&&els[i]){ const el=els[i];
+        timers.push(setTimeout(()=>el.classList.add('on'),(t-c.currentTime)*1000));
+        timers.push(setTimeout(()=>el.classList.remove('on'),(t+e.d*beat*0.9-c.currentTime)*1000)); }
+      pos+=e.d; });
+    return t0+total*beat;
+  }
+  for(let b=0;b<countIn;b++) tick(start+b*beat,b===0);
+  let next=start+countIn*beat;
+  const loopIt=()=>{ if(playing!==id) return; const end=pass(next); next=end;
+    if(document.getElementById('loop').checked && opts.loopable!==false) timers.push(setTimeout(loopIt,(end-c.currentTime-0.25)*1000)); };
+  loopIt();
+}
+
+/* ---------- datos ---------- */
+const FIGS=[
+  {k:'redonda',n:'Redonda',dur:'4 tiempos',desc:'Un golpe que ocupa el compás entero de 4/4. Tocas en el 1 y cuentas 2, 3, 4 sin tocar.',ev:[{s:'Ta',d:4}]},
+  {k:'blanca',n:'Blanca',dur:'2 tiempos',desc:'Dura dos pulsos. En castañuelas se usa mucho para el Pam final: golpeas y dejas respirar.',ev:[{s:'Ta',d:2},{s:'Ta',d:2}]},
+  {k:'negra',n:'Negra',dur:'1 tiempo',desc:'Un golpe por pulso, justo con el metrónomo. Es la figura base de la Lección 1.',ev:[{s:'Ta',d:1},{s:'Ta',d:1},{s:'Ta',d:1},{s:'Ta',d:1}]},
+  {k:'corchea',n:'Corchea',dur:'½ tiempo',desc:'Dos golpes iguales por pulso. Se cuenta «1-y, 2-y». Aparece en la Lección 2.',ev:Array(8).fill({s:'Pi',d:0.5})},
+  {k:'semicorchea',n:'Semicorchea',dur:'¼ de tiempo',desc:'Cuatro golpes por pulso. Se cuenta «1-e-y-a». Es la base de la velocidad de la carretilla.',ev:Array(16).fill({s:'Pi',d:0.25})},
+  {k:'carretilla',n:'Carretilla (Ria)',dur:'adorno + 1 tiempo',desc:'Redoble rápido de cuatro dedos de la mano derecha que termina sobre el pulso. Se escribe como negra con rayas de trémolo.',ev:[{s:'Ria',d:1},{s:'Ria',d:1},{s:'Ria',d:1},{s:'Ria',d:1}]},
+  {k:'sil-negra',n:'Silencio de negra',dur:'1 tiempo sin tocar',desc:'Pausa de un pulso. Las manos se quedan listas y sigues contando.',ev:[{s:'Ta',d:1},{s:null,d:1},{s:'Ta',d:1},{s:null,d:1}]},
+  {k:'sil-blanca',n:'Silencio de blanca',dur:'2 tiempos sin tocar',desc:'Pausa de dos pulsos. Sirve para separar frases.',ev:[{s:'Ta',d:1},{s:'Ta',d:1},{s:null,d:2}]},
+];
+const SIGS=[
+  {n:'Compás de 4/4',dur:'4 negras por compás',desc:'Se cuenta 1, 2, 3, 4, con el acento en el 1. Lo usan las Lecciones 1 y 2.',ev:[{s:'Pam',d:1},{s:'Ta',d:1},{s:'Ta',d:1},{s:'Ta',d:1}],b:4,svg:'<svg viewBox="0 0 26 44" aria-hidden="true"><text x="13" y="20" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="currentColor">4</text><text x="13" y="38" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="currentColor">4</text></svg>'},
+  {n:'Compás de 3/4',dur:'3 negras por compás',desc:'Se cuenta 1, 2, 3. Es el aire de muchos bailes españoles, como las sevillanas. Lo usa la Lección 3.',ev:[{s:'Pam',d:1},{s:'Ta',d:1},{s:'Ta',d:1},{s:'Pam',d:1},{s:'Ta',d:1},{s:'Ta',d:1}],b:3,svg:'<svg viewBox="0 0 26 44" aria-hidden="true"><text x="13" y="20" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="currentColor">3</text><text x="13" y="38" text-anchor="middle" font-size="18" font-family="Georgia,serif" fill="currentColor">4</text></svg>'},
+];
+const STROKES=[
+  {s:'Ta',h:'Izquierda',d:'Medio y anular juntos sobre la castañuela. Sonido grave.'},
+  {s:'Pi',h:'Derecha',d:'Medio y anular juntos sobre la castañuela. Sonido agudo.'},
+  {s:'Pam',h:'Ambas',d:'Ta y Pi al mismo tiempo. Golpe acentuado.'},
+  {s:'Ria',h:'Derecha',d:'Carretilla: meñique, anular, medio e índice seguidos.'},
+  {s:'Chin',h:'Ambas',d:'Una castañuela contra la otra. Sonido de cierre.'},
+];
+const n=(s,d)=>({s,d}), r=(d)=>({s:null,d});
+const LESSONS=[
+  {id:'leccion-1',t:'Lección 1 · Pulso con Ta y Pi',audio:'0:00 – 1:08 (la base entra hacia 0:10)',bpm:95,sig:[4,4],
+   goal:'Sonido limpio en cada mano y un pulso parejo. Todo en negras: un golpe por tiempo.',
+   ex:[
+    {t:'1.1 · Mano izquierda sola',d:'Ocho negras con Ta.',m:[[n('Ta',1),n('Ta',1),n('Ta',1),n('Ta',1)],[n('Ta',1),n('Ta',1),n('Ta',1),n('Ta',1)]]},
+    {t:'1.1 · Mano derecha sola',d:'Ocho negras con Pi.',m:[[n('Pi',1),n('Pi',1),n('Pi',1),n('Pi',1)],[n('Pi',1),n('Pi',1),n('Pi',1),n('Pi',1)]]},
+    {t:'1.2 · Alternar',d:'Ta y Pi turnándose, siempre en negras.',m:[[n('Ta',1),n('Pi',1),n('Ta',1),n('Pi',1)],[n('Ta',1),n('Pi',1),n('Ta',1),n('Pi',1)]]},
+    {t:'1.3 · Cierre con Pam',d:'El Pam final es una blanca: golpeas en el 3 y sostienes el 4.',m:[[n('Ta',1),n('Pi',1),n('Ta',1),n('Pi',1)],[n('Ta',1),n('Pi',1),n('Pam',2)]]},
+   ],
+   tips:['Cuenta en voz alta «1, 2, 3, 4» mientras tocas.','Si las mitades no suenan, afloja un poco el cordón.','Busca que Ta y Pi tengan el mismo volumen.']},
+  {id:'leccion-2',t:'Lección 2 · Corcheas y acento',audio:'1:08 – 1:58 (la base entra hacia 1:12)',bpm:115,sig:[4,4],
+   goal:'Meter dos golpes en un pulso (corcheas), usar silencios y colocar el Pam en el tiempo fuerte.',
+   ex:[
+    {t:'2.1 · Doble derecha',d:'Dos corcheas de Pi y una negra de Ta. Cuenta «1-y 2, 3-y 4».',m:[[n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1)],[n('Pi',.5),n('Pi',.5),n('Ta',1),n('Pi',.5),n('Pi',.5),n('Ta',1)]]},
+    {t:'2.2 · Frase con acento',d:'Corcheas alternadas que desembocan en un Pam de negra y un silencio.',m:[[n('Pi',.5),n('Ta',.5),n('Pi',.5),n('Ta',.5),n('Pi',.5),n('Ta',.5),n('Pam',1)],[n('Pi',.5),n('Ta',.5),n('Pi',.5),n('Ta',.5),n('Pam',1),r(1)]]},
+    {t:'2.3 · Pam al inicio',d:'El acento cae en los tiempos 1 y 3; el 4 es silencio.',m:[[n('Pam',1),n('Pi',.5),n('Ta',.5),n('Pam',1),r(1)],[n('Pam',1),n('Pi',.5),n('Ta',.5),n('Pam',1),r(1)]]},
+   ],
+   tips:['El Pam va más fuerte; las corcheas, suaves y del mismo largo.','En los silencios las manos se quedan listas: el silencio también se cuenta.','Domina la frase a 70 pulsos/min antes de subir al tempo del audio.']},
+  {id:'leccion-3',t:'Lección 3 · La carretilla en 3/4',audio:'1:58 – 2:29 (la base entra hacia 2:02)',bpm:130,sig:[3,4],
+   goal:'Hacer la carretilla con la derecha y unirla a la frase clásica en compás de 3/4.',
+   ex:[
+    {t:'3.1 · Carretilla sola',d:'Meñique → anular → medio → índice, rematando sobre el 1. Después, dos tiempos de silencio.',m:[[n('Ria',1),r(2)],[n('Ria',1),r(2)]]},
+    {t:'3.2 · Ria · Pi · Ta',d:'Tres negras por compás. La carretilla arranca un instante antes del 1 y aterriza en él.',m:[[n('Ria',1),n('Pi',1),n('Ta',1)],[n('Ria',1),n('Pi',1),n('Ta',1)]]},
+    {t:'3.3 · Frase completa',d:'La frase de principiante que une todo lo aprendido.',say:'«Ria-pi-ta, ria-pi-ta, ria-pi-ta, pi-ta-pam»',m:[[n('Ria',1),n('Pi',1),n('Ta',1)],[n('Ria',1),n('Pi',1),n('Ta',1)],[n('Ria',1),n('Pi',1),n('Ta',1)],[n('Pi',1),n('Ta',1),n('Pam',1)]]},
+   ],
+   tips:['Practica la carretilla tamborileando en una mesa antes de usar las castañuelas.','Si suena «a trompicones», bájale al tempo: primero regularidad, luego velocidad.','Termina siempre con un Pam firme.']},
+];
+
+/* ---------- render ---------- */
+const playIco='<svg viewBox="0 0 12 12"><path d="M2 1 L11 6 L2 11 Z"/></svg>';
+const tempo=document.getElementById('tempo'), bpmOut=document.getElementById('bpmOut');
+const setBpm=v=>{tempo.value=v;bpmOut.textContent=tempo.value;};
+tempo.addEventListener('input',()=>bpmOut.textContent=tempo.value);
+document.getElementById('stopBtn').addEventListener('click',stopAll);
+
+function mkBtn(label,fn){const b=document.createElement('button');b.type='button';b.className='btn';b.innerHTML=playIco+label;b.addEventListener('click',fn);return b;}
+
+const figs=document.getElementById('figs');
+FIGS.forEach(f=>{const el=document.createElement('div');el.className='fig';
+  el.innerHTML=`<div class="glyph">${glyph(f.k)}</div><div class="name">${f.n}</div><div class="dur">${f.dur}</div><p>${f.desc}</p>`;
+  el.appendChild(mkBtn('Escuchar',()=>play(f.ev,4,null,{loopable:false})));figs.appendChild(el);});
+const sigs=document.getElementById('sigs');
+SIGS.forEach(f=>{const el=document.createElement('div');el.className='fig';
+  el.innerHTML=`<div class="glyph">${f.svg}</div><div class="name">${f.n}</div><div class="dur">${f.dur}</div><p>${f.desc}</p>`;
+  el.appendChild(mkBtn('Escuchar',()=>play(f.ev,f.b,null,{loopable:false})));sigs.appendChild(el);});
+const strokes=document.getElementById('strokes');
+STROKES.forEach(s=>{const el=document.createElement('div');el.className='stroke';
+  el.innerHTML=`<b>${s.s}</b><span class="eyebrow">${s.h}</span><small>${s.d}</small>`;
+  el.appendChild(mkBtn('Oír',()=>{audio();stopAll();SOUND[s.s](ctx.currentTime+0.12);}));strokes.appendChild(el);});
+
+function countsFor(m,beatsPer){ // etiqueta de conteo bajo cada evento
+  let pos=0; return m.map(e=>{const b=Math.floor(pos)+1, frac=pos-Math.floor(pos);
+    const lbl=frac===0?String(b):frac===0.5?'y':frac===0.25?'e':'a'; pos+=e.d; return lbl;});
+}
+const lessons=document.getElementById('lessons');
+LESSONS.forEach(L=>{
+  const sec=document.createElement('section'); sec.id=L.id;
+  sec.innerHTML=`<div class="wrap"><span class="eyebrow">Compás ${L.sig[0]}/${L.sig[1]}</span><h2>${L.t}</h2>
+    <div class="meta"><span class="chip">Audio: <strong>${L.audio}</strong></span><span class="chip">Tempo del audio ≈ <strong>${L.bpm}</strong></span></div>
+    <p><strong>Objetivo:</strong> ${L.goal}</p><div class="exs" style="display:grid;gap:12px"></div>
+    <h3>Consejos</h3><ul class="tips">${L.tips.map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
+  const meta=sec.querySelector('.meta');
+  const useT=document.createElement('button');useT.type='button';useT.className='chip';useT.textContent=`Usar ${L.bpm} pulsos/min`;
+  useT.addEventListener('click',()=>setBpm(L.bpm));meta.appendChild(useT);
+  const slow=document.createElement('button');slow.type='button';slow.className='chip';slow.textContent='Practicar lento (70)';
+  slow.addEventListener('click',()=>setBpm(70));meta.appendChild(slow);
+  const exs=sec.querySelector('.exs');
+  L.ex.forEach(E=>{
+    const box=document.createElement('div');box.className='ex';
+    const head=document.createElement('div');head.className='ex-head';
+    head.innerHTML=`<h3>${E.t}</h3>`;
+    const score=document.createElement('div');score.className='score';
+    const ms=document.createElement('div');ms.className='measures';
+    const ts=document.createElement('div');ts.className='timesig';ts.innerHTML=`<span>${L.sig[0]}</span><span>${L.sig[1]}</span>`;ms.appendChild(ts);
+    const flat=[], els=[];
+    E.m.forEach((m,mi)=>{const me=document.createElement('div');me.className='measure'+(mi===E.m.length-1?' final':'');
+      const cs=countsFor(m,L.sig[0]);
+      m.forEach((e,i)=>{const k=figOf(e);const ev=document.createElement('div');ev.className='ev'+(e.s?'':' rest');
+        ev.style.minWidth=Math.max(46,e.d*58)+'px';
+        ev.innerHTML=`<span class="counts">${cs[i]}</span>${glyph(k)}<span class="syl">${e.s||'—'}</span><span class="fn">${FIG_LABEL[k]}</span>`;
+        me.appendChild(ev);flat.push(e);els.push(ev);});
+      ms.appendChild(me);});
+    score.appendChild(ms);
+    head.appendChild(mkBtn('Tocar',()=>play(flat,L.sig[0],els)));
+    const p=document.createElement('p');p.textContent=E.d;head.appendChild(p);
+    box.appendChild(head);box.appendChild(score);
+    if(E.say){const s=document.createElement('p');s.className='say';s.textContent='Se dice: '+E.say;box.appendChild(s);}
+    exs.appendChild(box);});
+  lessons.appendChild(sec);
+});
+
+/* ---------- pestañas ---------- */
+const views={manual:document.getElementById('view-manual'),creador:document.getElementById('view-creador')};
+function show(v){ if(!views[v]) v='manual';
+  Object.entries(views).forEach(([k,el])=>el.hidden=k!==v);
+  document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  document.getElementById('toc').hidden=v!=='manual'; stopAll(); }
+document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>{
+  if(b.dataset.view==='creador'){ location.hash='creador'; } else { history.replaceState(null,'',location.pathname+location.search); show('manual'); window.scrollTo(0,0);} }));
+window.addEventListener('hashchange',()=>show(location.hash==='#creador'?'creador':'manual'));
+show(location.hash==='#creador'?'creador':'manual');
+
+/* ---------- creador de ritmos ---------- */
+const KEY='castanuelas.ritmos';
+const FIG_CHOICES=[{d:4,n:'Redonda'},{d:2,n:'Blanca'},{d:1,n:'Negra'},{d:0.5,n:'Corchea'},{d:0.25,n:'Semicorchea'}];
+const HITS=[{s:'Ta',h:'izquierda'},{s:'Pi',h:'derecha'},{s:'Pam',h:'ambas'},{s:'Ria',h:'carretilla'},{s:'Chin',h:'choque'},{s:null,h:'silencio'}];
+let cur={name:'',sig:4,ev:[]}, curDur=1;
+const bScore=document.getElementById('bScore'), bStatus=document.getElementById('bStatus');
+const rName=document.getElementById('rName'), rSig=document.getElementById('rSig');
+
+const figPicker=document.getElementById('figPicker');
+FIG_CHOICES.forEach(f=>{const b=document.createElement('button');b.type='button';b.className='pick';b.setAttribute('role','radio');
+  b.setAttribute('aria-checked',f.d===curDur);b.innerHTML=glyph(FIG_BY_DUR[f.d])+`<span>${f.n}</span>`;
+  b.addEventListener('click',()=>{curDur=f.d;figPicker.querySelectorAll('.pick').forEach(x=>x.setAttribute('aria-checked','false'));b.setAttribute('aria-checked','true');});
+  figPicker.appendChild(b);});
+const hitPicker=document.getElementById('hitPicker');
+HITS.forEach(h=>{const b=document.createElement('button');b.type='button';b.className='pick hit';
+  b.innerHTML=`<b>${h.s||'—'}</b><span>${h.h}</span>`;
+  b.addEventListener('click',()=>{ cur.ev.push({s:h.s,d:curDur}); if(h.s){audio();SOUND[h.s](ctx.currentTime+0.03);} drawBuilder(); });
+  hitPicker.appendChild(b);});
+
+function splitMeasures(ev,beatsPer){
+  const ms=[]; let m=[], acc=0, idx=[];
+  ev.forEach((e,i)=>{ m.push(e); idx.push(i); acc+=e.d;
+    if(acc>=beatsPer-1e-9){ ms.push({ev:m,idx,over:acc>beatsPer+1e-9,acc}); m=[]; idx=[]; acc=0; } });
+  if(m.length) ms.push({ev:m,idx,over:false,acc,open:true});
+  return ms;
+}
+function drawBuilder(){
+  bScore.innerHTML='';
+  const bp=cur.sig;
+  if(!cur.ev.length){ bScore.innerHTML='<p class="empty">Tu ritmo aparecerá aquí. Elige una figura y toca un golpe para empezar.</p>'; bStatus.textContent=''; return; }
+  const {node}=scoreNode(cur.ev,bp,(i)=>{cur.ev.splice(i,1);drawBuilder();});
+  bScore.appendChild(node);
+  const total=cur.ev.reduce((a,e)=>a+e.d,0), ms=splitMeasures(cur.ev,bp), last=ms[ms.length-1];
+  let msg=`${cur.ev.length} golpes · ${ms.filter(m=>!m.open).length} compás(es) completo(s)`;
+  if(last.open) msg+=` · faltan ${fmtBeats(bp-last.acc)} para cerrar el último compás`;
+  if(ms.some(m=>m.over)) msg+=' · ⚠ un compás marcado se pasa de tiempos; usa una figura más corta';
+  bStatus.textContent=msg;
+}
+function fmtBeats(x){const m={0.25:'¼ de tiempo',0.5:'½ tiempo',0.75:'¾ de tiempo'};return m[x]||(x+(x===1?' tiempo':' tiempos'));}
+function scoreNode(ev,bp,onClick){
+  const ms=splitMeasures(ev,bp), wrap=document.createElement('div');wrap.className='measures';
+  const ts=document.createElement('div');ts.className='timesig';ts.innerHTML=`<span>${bp}</span><span>4</span>`;wrap.appendChild(ts);
+  const els=[];
+  ms.forEach((m,mi)=>{const me=document.createElement('div');me.className='measure'+(m.over?' over':'')+(mi===ms.length-1&&!m.open?' final':'');
+    const cs=countsFor(m.ev,bp);
+    m.ev.forEach((e,j)=>{const k=figOf(e);const el=document.createElement('div');el.className='ev'+(e.s?'':' rest');
+      el.style.minWidth=Math.max(46,e.d*58)+'px';
+      el.innerHTML=`<span class="counts">${cs[j]}</span>${glyph(k)}<span class="syl">${e.s||'—'}</span><span class="fn">${FIG_LABEL[k]}</span>`;
+      if(onClick){el.title='Quitar este golpe';el.tabIndex=0;const i=m.idx[j];el.addEventListener('click',()=>onClick(i));el.addEventListener('keydown',k=>{if(k.key==='Enter'||k.key==='Delete')onClick(i);});}
+      me.appendChild(el);els[m.idx[j]]=el;});
+    wrap.appendChild(me);});
+  return {node:wrap,els};
+}
+rSig.addEventListener('change',()=>{cur.sig=+rSig.value;drawBuilder();});
+rName.addEventListener('input',()=>{cur.name=rName.value;});
+document.getElementById('bUndo').addEventListener('click',()=>{cur.ev.pop();drawBuilder();});
+document.getElementById('bClear').addEventListener('click',()=>{cur.ev=[];drawBuilder();});
+document.getElementById('bPlay').addEventListener('click',()=>{ if(!cur.ev.length) return;
+  const els=[...bScore.querySelectorAll('.ev')]; play(cur.ev,cur.sig,els); });
+
+function loadAll(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return [];}}
+function saveAll(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true;}catch(e){return false;}}
+let savedList=loadAll(), memOnly=false;
+document.getElementById('bSave').addEventListener('click',()=>{
+  if(!cur.ev.length){bStatus.textContent='Agrega al menos un golpe antes de guardar.';return;}
+  const name=(rName.value.trim()||`Ritmo ${savedList.length+1}`);
+  const item={id:Date.now(),name,sig:cur.sig,ev:cur.ev.map(e=>({s:e.s,d:e.d}))};
+  const i=savedList.findIndex(r=>r.name===name); if(i>=0) savedList[i]={...item,id:savedList[i].id}; else savedList.unshift(item);
+  memOnly=!saveAll(savedList); drawSaved();
+  bStatus.textContent=memOnly?`Guardado «${name}» solo mientras la página esté abierta (este navegador no permite guardar).`:`Guardado «${name}».`;
+});
+const encode=r=>btoa(unescape(encodeURIComponent(JSON.stringify({n:r.name,c:r.sig,e:r.ev.map(e=>[e.s||'',e.d])}))));
+function decode(code){const o=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+  const ev=o.e.map(([s,d])=>({s:s||null,d:+d})).filter(e=>(e.s===null||SOUND[e.s])&&[4,2,1,0.5,0.25].includes(e.d));
+  if(!ev.length) throw new Error('vacío'); return {id:Date.now(),name:String(o.n||'Ritmo importado').slice(0,60),sig:[2,3,4].includes(+o.c)?+o.c:4,ev};}
+function drawSaved(){
+  const box=document.getElementById('saved'); box.innerHTML='';
+  if(!savedList.length){box.innerHTML='<p class="empty">Aún no tienes ritmos guardados. Crea uno arriba y pulsa «Guardar».</p>';return;}
+  savedList.forEach(r=>{
+    const c=document.createElement('div');c.className='card';
+    const head=document.createElement('div');head.className='row';
+    const t=document.createElement('b');t.textContent=r.name;head.appendChild(t);
+    const chip=document.createElement('span');chip.className='chip';chip.textContent=`${r.sig}/4 · ${r.ev.length} golpes`;head.appendChild(chip);
+    const sc=document.createElement('div');sc.className='score';const {node,els}=scoreNode(r.ev,r.sig);sc.appendChild(node);
+    const acts=document.createElement('div');acts.className='row';
+    acts.appendChild(mkBtn('Tocar',()=>play(r.ev,r.sig,els)));
+    const mk=(txt,fn)=>{const b=document.createElement('button');b.type='button';b.className='btn ghost';b.textContent=txt;b.addEventListener('click',fn);acts.appendChild(b);return b;};
+    mk('Editar',()=>{cur={name:r.name,sig:r.sig,ev:r.ev.map(e=>({...e}))};rName.value=r.name;rSig.value=r.sig;drawBuilder();window.scrollTo({top:0,behavior:'smooth'});});
+    const cp=mk('Copiar código',async()=>{const code=encode(r);
+      try{await navigator.clipboard.writeText(code);cp.textContent='Copiado';}catch(e){const inp=document.getElementById('importCode');inp.value=code;inp.select();cp.textContent='Código abajo, cópialo';}
+      setTimeout(()=>cp.textContent='Copiar código',2000);});
+    const del=mk('Eliminar',()=>{ if(del.dataset.armed){savedList=savedList.filter(x=>x.id!==r.id);saveAll(savedList);drawSaved();}
+      else{del.dataset.armed='1';del.textContent='¿Eliminar? Toca otra vez';setTimeout(()=>{if(del.isConnected){delete del.dataset.armed;del.textContent='Eliminar';}},3000);} });
+    c.append(head,sc,acts);box.appendChild(c);});
+}
+document.getElementById('bImport').addEventListener('click',()=>{
+  const inp=document.getElementById('importCode');
+  try{const r=decode(inp.value);savedList.unshift(r);saveAll(savedList);drawSaved();inp.value='';bStatus.textContent=`Cargado «${r.name}» en tus ritmos.`;}
+  catch(e){bStatus.textContent='Ese código no es válido. Revisa que lo hayas copiado completo.';}
+});
+if(!savedList.length){ // ejemplo para empezar
+  savedList=[{id:1,name:'Ejemplo · Sevillana básica',sig:3,ev:[{s:'Ria',d:1},{s:'Pi',d:1},{s:'Ta',d:1},{s:'Ria',d:1},{s:'Pi',d:1},{s:'Ta',d:1},{s:'Pi',d:.5},{s:'Pi',d:.5},{s:'Ta',d:1},{s:'Pam',d:1},{s:'Chin',d:1},{s:null,d:2}]}];
+}
+drawBuilder(); drawSaved();
+</script>
+</body></html>
